@@ -1,7 +1,7 @@
 from PIL import Image
 import numpy as np
 import os
-from tqdm import tqdm
+#from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
