@@ -1,9 +1,9 @@
 # AerialSeg
 AerialSeg is a collection of algorithm pipelines for segmentation of aerial imagery implemented by PyTorch, which consists of following elements with characteristics.
 
-- Aerial imagery dataset: ISPRS Potsdam only now
-- Aerial imagery dataloader:
+- Dataset and Dataloader: ISPRS Potsdam only now
 - Data augmentation
+- Special loss function
 - Evaluation
 
 ## Environment
@@ -15,7 +15,7 @@ Tests are done with following environments:
 - Python = 3.7.5
 - PyTorch = 1.2.0
 - torchvison = 0.4.0
-- CUDA =10.0  (please pay attention to your GPU driver's version)
+- CUDA =10.0
 - NVIDIA GPU driver = 410.78
 
 ### macOS Mojave 10.14.6
@@ -28,7 +28,7 @@ Note:
 
 1. Lower versions of PyTorch may not contain implementation of AdamW optimizer.
 2. Lower versions of torchvision may not contain implementation of popular segmentation models.
-3. Pay attention to version of driver, CUDA and PyTorch.
+3. Pay attention to the relationship among version of driver, CUDA and PyTorch.
 
 ## Configuration
 
