@@ -4,6 +4,8 @@ from .. import resnet
 from .deeplabv3 import DeepLabHead, DeepLabV3
 from .fcn import FCN, FCNHead
 
+#For vgg19
+from .. import vgg
 
 __all__ = ['fcn_resnet50', 'fcn_resnet101', 'deeplabv3_resnet50', 'deeplabv3_resnet101']
 
@@ -38,7 +40,6 @@ def _segm_resnet(name, backbone_name, num_classes, aux, pretrained_backbone=True
     inplanes = 2048
     classifier = model_map[name][0](inplanes, num_classes)
     base_model = model_map[name][1]
-
     model = base_model(backbone, classifier, aux_classifier)
     return model
 
@@ -56,6 +57,16 @@ def _load_model(arch_type, backbone, pretrained, progress, num_classes, aux_loss
             state_dict = load_state_dict_from_url(model_url, progress=progress)
             model.load_state_dict(state_dict)
     return model
+
+''' failed experiment
+def fcn_vgg19(pretrained=False, progress=True, num_classes=21, aux_loss=None, **kwargs):
+    inplanes = 2048
+    classifier = FCNHead(inplanes, num_classes)
+    aux_classifier = None
+    backbone = vgg.__dict__['vgg19'](pretrained=True)
+    model = FCN(backbone, classifier, aux_classifier)
+    return model
+'''
 
 
 def fcn_resnet50(pretrained=False, progress=True,

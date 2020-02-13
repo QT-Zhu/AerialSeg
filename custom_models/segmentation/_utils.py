@@ -20,10 +20,11 @@ class _SimpleSegmentationModel(nn.Module):
         input_shape = x.shape[-2:]
         # contract: features is a dict of tensors
         features = self.backbone(x)
-
+        
         result = OrderedDict()
         x = features["out"]
         x = self.classifier(x)
+        #x = self.upsample_module(x)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=False)
 
         result["out"] = x

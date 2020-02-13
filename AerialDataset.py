@@ -32,7 +32,6 @@ class AerialDataset(Dataset):
         else: #self.mode == 'eval'
             self.augtrans = AerialTransforms.EvalAug(self.crop_size)
         
-
     def __len__(self):
         return len(self.gt_list)
 
@@ -42,6 +41,5 @@ class AerialDataset(Dataset):
         #Trans from PIL pair to tensor pair
         return self.augtrans(img,gt)
         
-
 if __name__ == "__main__":
    print("AerialDataset.py")

@@ -14,12 +14,12 @@ class TrainAug(object):
         self.normalize_trans = transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
     
     def __call__(self,img,gt): #img and gt are PIL objects
-        _, img ,gt = self.crop_trans(img,gt) #crop_coordination can be used for test
+        _, img ,gt = self.crop_trans(img,gt) #coordination is useless for training
+        
         img, gt = self.hflip_trans(img,gt)
         img, gt = self.vflip_trans(img,gt)
         
         img, gt = self.tensor_trans(img,gt)
-        #print(np.array(gt))
         img = self.normalize_trans(img)
         #gt has to transform from (batchsize,1,H,W) to (batchsize,H,W)
         #loss func will transfer it to one-hot automatically
@@ -33,9 +33,9 @@ class EvalAug(object):
         self.normalize_trans = transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])
     
     def __call__(self,img,gt):
-        _, img, gt = self.crop_trans(img,gt,[0,0,512,512])
+        _, img, gt = self.crop_trans(img,gt)
         #Only check left upper corner (temp)
         img, gt = self.tensor_trans(img,gt)
-        img = self.normalize_trans(img)
+        img_tensor = self.normalize_trans(img)
         gt = gt.squeeze()
-        return img, gt
+        return img, img_tensor, gt

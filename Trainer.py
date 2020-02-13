@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from metrics import Evaluator
 import numpy as np
 from PIL import Image
-
 #For Lovasz loss
 from utils import LovaszSoftmax
 
@@ -22,6 +21,7 @@ class Trainer(object):
         self.train_loader =  DataLoader(self.train_data,batch_size=args.train_batch_size,shuffle=True,
                           num_workers=1)
         self.model = models.deeplabv3_resnet50(num_classes=args.num_of_class)
+        #self.model = models.fcn_resnet50(num_classes=args.num_of_class)
 
         self.loss = args.loss
         if self.loss == 'CE':
@@ -43,18 +43,20 @@ class Trainer(object):
 
         self.resume = args.resume
         if self.resume != None:
-            checkpoint = torch.load(args.resume)
+            if self.cuda:
+                checkpoint = torch.load(args.resume)
+            else:
+                checkpoint = torch.load(args.resume, map_location='cpu') 
             self.model.load_state_dict(checkpoint['model'])
             self.optimizer.load_state_dict(checkpoint['opt'])
             self.start_epoch = checkpoint['epoch'] + 1
             #start from next epoch
         else:
             self.start_epoch = 1
-    
-    def test(self):
-        raise NotImplementedError
-
+        
+    #Note: self.start_epoch and self.epochs are only used in run() to schedule training & validation
     def run(self):
+        self.eval(0)
         end_epoch = self.start_epoch + self.epochs
         for epoch in range(self.start_epoch,end_epoch):
             self.train(epoch)
@@ -84,10 +86,11 @@ class Trainer(object):
     def eval(self,epoch):
         self.model.eval()
         self.evaluator.reset()
-        os.mkdir("epoch"+str(epoch))
+        if os.path.exists("epoch"+str(epoch)) is False:
+            os.mkdir("epoch"+str(epoch))
         print(f"-----eval epoch {epoch}-----")
-        for i,[img,gt] in enumerate(self.eval_loader):
-            print("batch:",i)
+        for i,[ori,img,gt] in enumerate(self.eval_loader):
+            print("batch:",i+1)
             print("img:",img.shape)
             print("gt:",gt.shape)
             if self.cuda:
@@ -99,13 +102,15 @@ class Trainer(object):
             #Both gt and pred are numpy array now
             self.evaluator.add_batch(gt,pred)
 
+            #TODO: eval_batch_size > 1
             #colorise
-            img = img.cpu().numpy()
             mask = ret2mask(pred)
             gt_color = ret2mask(gt)
-            cat = np.concatenate((gt_color,img,mask),axis=1)
-            cat = Image.fromarray(cat)
-            cat.save("epoch"+str(epoch)+"/batch"+str(i)+".png")
+            ori = ori.numpy().squeeze().transpose(1,2,0)
+            
+            cat = np.concatenate((gt_color,ori,mask),axis=1)
+            cat = Image.fromarray(np.uint8(cat))
+            cat.save("epoch"+str(epoch)+"/batch"+str(i+1)+".png")
         
         Acc = self.evaluator.Pixel_Accuracy()
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
@@ -116,8 +121,13 @@ class Trainer(object):
         print("Acc_class:",Acc_class)
         print("mIoU:",mIoU)
         print("FWIoU:",FWIoU)
+    
+    def test(self):
+        my_tester = Tester(self)
+        my_tester.test()
+        raise NotImplementedError
 
 
 if __name__ == "__main__":
-   print("--Trainer.py--test--")
+   print("--Trainer.py--")
    
