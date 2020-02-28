@@ -24,11 +24,11 @@ else:
     Iterable = collections.abc.Iterable
 
 
-__all__ = ["Compose", "ToTensor", "ToPILImage", "Normalize", "Resize", "Scale", "CenterCrop", "Pad",
+__all__ = ["Compose", "ToTensor_single", "ToTensor", "ToPILImage", "Normalize", "Resize", "Scale", "CenterCrop", "Pad",
            "Lambda", "RandomApply", "RandomChoice", "RandomOrder", "RandomCrop", "RandomHorizontalFlip",
            "RandomVerticalFlip", "RandomResizedCrop", "RandomSizedCrop", "FiveCrop", "TenCrop", "LinearTransformation",
            "ColorJitter", "RandomRotation", "RandomAffine", "Grayscale", "RandomGrayscale",
-           "RandomPerspective", "RandomErasing"]
+           "RandomPerspective", "RandomErasing","ZQTRandomCrop"]
 
 _pil_interpolation_to_str = {
     Image.NEAREST: 'PIL.Image.NEAREST',
@@ -78,6 +78,14 @@ class Compose(object):
         format_string += '\n)'
         return format_string
 
+class ToTensor_single(object):
+    def __call__(self, img):
+        img = np.array(img).astype(np.float32).transpose((2, 0, 1))
+        img = torch.from_numpy(img).float()
+        return img
+
+    def __repr__(self):
+        return self.__class__.__name__ + '()'
 
 class ToTensor(object):
     """Convert a ``PIL Image`` or ``numpy.ndarray`` to tensor.
@@ -465,6 +473,70 @@ class RandomCrop(object):
 
         i = random.randint(0, h - th)
         j = random.randint(0, w - tw)
+        return i, j, th, tw
+
+    def __call__(self, img, gt, pos='random'):
+        """
+        Args:
+            img (PIL Image): Image to be cropped.
+
+        Returns:
+            PIL Image: Cropped image.
+        """
+        if pos != 'random':
+            i,j,h,w = pos
+            return pos, F.crop(img, i, j, h, w), F.crop(gt, i, j, h, w)
+        if self.padding is not None:
+            img = F.pad(img, self.padding, self.fill, self.padding_mode)
+
+        # pad the width if needed
+        if self.pad_if_needed and img.size[0] < self.size[1]:
+            img = F.pad(img, (self.size[1] - img.size[0], 0), self.fill, self.padding_mode)
+        # pad the height if needed
+        if self.pad_if_needed and img.size[1] < self.size[0]:
+            img = F.pad(img, (0, self.size[0] - img.size[1]), self.fill, self.padding_mode)
+
+        i, j, h, w = self.get_params(img, self.size)
+        coordination = tuple([i,j,h,w])
+        #print(coordination)
+        return coordination,F.crop(img, i, j, h, w),F.crop(gt, i, j, h, w)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(size={0}, padding={1})'.format(self.size, self.padding)
+
+class ZQTRandomCrop(object):
+    def __init__(self, size, padding=None, pad_if_needed=False, fill=0, padding_mode='constant'):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+        self.padding = padding
+        self.pad_if_needed = pad_if_needed
+        self.fill = fill
+        self.padding_mode = padding_mode
+
+    @staticmethod
+    def get_params(img, output_size):
+        """Get parameters for ``crop`` for a random crop.
+
+        Args:
+            img (PIL Image): Image to be cropped.
+            output_size (tuple): Expected output size of the crop.
+
+        Returns:
+            tuple: params (i, j, h, w) to be passed to ``crop`` for random crop.
+        """
+        w, h = _get_image_size(img)
+        th, tw = output_size
+        if w == tw and h == th:
+            return 0, 0, h, w
+        
+        i = random.randint(0,h)
+        j = random.randint(0,w)
+        if i>h-th:
+            i = random.choice([h-th,0])
+        if j>w-tw:
+            j = random.choice([w-tw,0])
         return i, j, th, tw
 
     def __call__(self, img, gt, pos='random'):

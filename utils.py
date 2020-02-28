@@ -1,7 +1,7 @@
 from PIL import Image
 import numpy as np
 import os
-#from tqdm import tqdm
+from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
@@ -141,13 +141,13 @@ def main(src,dest):
     for filename in tqdm(os.listdir(src)):
         if filename[0]=='.':
             continue
-        img = np.array(Image.open(os.path.join(src,filename)).convert('RGB'))
-        ret = Image.fromarray(mask2label(img))
+        img = Image.open(os.path.join(src,filename)).convert('RGB')
+        ret = mask2label(img)
         ret.save(os.path.join(dest,filename))
 
 
 
-#main('Potsdam/2_Ortho_RGB','Potsdam_label')
+#main('Potsdam/5_Labels_all','Potsdam/Potsdam_label')
 
 
 

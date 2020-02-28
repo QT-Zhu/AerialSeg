@@ -14,7 +14,7 @@ class AerialDataset(Dataset):
         self.img_list,self.gt_list = [],[]
         if self.mode=='train':
             self.list = args.train_list
-        else: #self.mode == 'eval'
+        else: #deprecated: self.mode == 'eval'
             self.list = args.eval_list
         with open(self.list) as f:
             for each_file in f:
@@ -37,7 +37,10 @@ class AerialDataset(Dataset):
 
     def __getitem__(self,index):
         img = Image.open(self.img_list[index]).convert('RGB')
-        gt = mask2label(Image.open(self.gt_list[index])) #or more efficiently, directly load label map
+        #gt = mask2label(Image.open(self.gt_list[index])) 
+        
+        #or more efficiently, directly load label map
+        gt = Image.open(self.gt_list[index])
         #Trans from PIL pair to tensor pair
         return self.augtrans(img,gt)
         

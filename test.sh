@@ -1,1 +1,0 @@
-python3 test.py --checkpoint ./model_epoch1000.pth.tar

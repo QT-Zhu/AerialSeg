@@ -5,7 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 class TrainAug(object):
     def __init__(self,crop_size):
-        self.crop_trans = transforms.RandomCrop(crop_size)
+        #self.crop_trans = transforms.RandomCrop(crop_size)
+        self.crop_trans = transforms.ZQTRandomCrop(crop_size)
         self.hflip_trans = transforms.RandomHorizontalFlip()
         self.vflip_trans = transforms.RandomVerticalFlip()
         #self.rotate_trans = transforms.RandomRotation(degrees=[0,90,180,270])
@@ -26,6 +27,7 @@ class TrainAug(object):
         gt = gt.squeeze()
         return img,gt
 
+#deprecated
 class EvalAug(object):
     def __init__(self,crop_size):
         self.crop_trans = transforms.RandomCrop(crop_size)
@@ -34,7 +36,6 @@ class EvalAug(object):
     
     def __call__(self,img,gt):
         _, img, gt = self.crop_trans(img,gt)
-        #Only check left upper corner (temp)
         img, gt = self.tensor_trans(img,gt)
         img_tensor = self.normalize_trans(img)
         gt = gt.squeeze()
