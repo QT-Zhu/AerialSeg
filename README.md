@@ -34,7 +34,7 @@ Note:
 
 1. Strongly recommend to use Anaconda to configure the environment by`conda create -n AerialSeg python=3.7.5`.
 2. For macOS, `conda install pytorch torchvision -c pytorch`, and for Ubuntu with CUDA, `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch` to install PyTorch and torchvision.
-3. Install sklearn by `conda install scikit-learn`.
+3. Install sklearn by `conda install scikit-learn` and install TensorBoardX by `conda install -c conda-forge tensorboardx`.
 4. Hopefully, no other site packages are required.
 
 
