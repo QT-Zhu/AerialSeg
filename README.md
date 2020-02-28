@@ -1,10 +1,10 @@
 # AerialSeg
 AerialSeg is a collection of algorithm pipelines for segmentation of aerial imagery implemented by PyTorch, which consists of following elements with characteristics.
 
-- Dataset and Dataloader: ISPRS Potsdam only now
-- Data augmentation
-- Special loss function
-- Evaluation
+- Dataset & Dataloader: Original ISPRS Potsdam dataset is supported and there is no need to divide large images into smaller ones before training anymore. AerialSeg adapts modified random sampling mechanism to fully make use of context information without waste by division.
+- Data augmentation: AerialSeg offers a set of data augmentation transforms considering the unique characteristics of aerial imgery, such as rotation invariance.
+- Loss function: The distribution of classes in aerial images is usually imbalanced so loss function should be sensitive to classes with a small proportion.
+- Evaluation & Monitoring: AerialSeg provides 4 metrics of evaluation, namely Acc, Acc per class, mIoU and FWIoU. TensorBoardX is applied to keep track with training process.
 
 ## Environment
 
@@ -28,14 +28,20 @@ Note:
 
 1. Lower versions of PyTorch may not contain implementation of AdamW optimizer.
 2. Lower versions of torchvision may not contain implementation of popular segmentation models.
-3. Pay attention to the relationship among version of driver, CUDA and PyTorch.
+3. Pay attention to the relationship among version of driver, CUDA and PyTorch. Please refer to the document of [NVIDIA](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html) and official site of [PyTorch](https://pytorch.org).
 
 ## Configuration
 
-1. Strongly recommend to use Anaconda to configure the environment by`conda create -n AerialSeg python=3.7.5`.
+1. Strongly recommend to use Anaconda to configure the environment by `conda create -n AerialSeg python=3.7.5`.
 2. For macOS, `conda install pytorch torchvision -c pytorch`, and for Ubuntu with CUDA, `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch` to install PyTorch and torchvision.
 3. Install sklearn by `conda install scikit-learn` and install TensorBoardX by `conda install -c conda-forge tensorboardx`.
-4. Hopefully, no other site packages are required.
+4. Hopefully, no other major site packages are required.
 
+## Todo
 
-
+- [x] Support FCN
+- [x] Support DeepLabV3
+- [x] Support Lovász-Softmax loss
+- [ ] Support DeepLabV3+
+- [ ] Support CARAFE upsampling module
+- [ ] Provide a simple GUI
