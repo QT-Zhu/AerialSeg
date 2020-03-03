@@ -49,7 +49,7 @@ class Trainer(object):
         self.schedule_mode = args.schedule_mode
         self.optimizer = opt.AdamW(self.model.parameters(),lr=0.05)
         if self.schedule_mode == 'step':
-            self.scheduler = opt.lr_scheduler.StepLR(self.optimizer, step_size=20, gamma=0.1)
+            self.scheduler = opt.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.1)
         elif self.schedule_mode == 'miou' or self.schedule_mode == 'acc':
             self.scheduler = opt.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='max', patience=10, factor=0.1)
         else:
@@ -83,14 +83,14 @@ class Trainer(object):
     def run(self):
         if self.init_eval: #init with an evaluation
             Acc,_,mIoU,_ = self.eval_complete(0,True)
-            self.writer.add_scalar('Acc/eval', Acc, 0)
-            self.writer.add_scalar('mIoU/eval', mIoU, 0)
+            self.writer.add_scalar('eval/Acc', Acc, 0)
+            self.writer.add_scalar('eval/mIoU', mIoU, 0)
 
         end_epoch = self.start_epoch + self.epochs
         for epoch in range(self.start_epoch,end_epoch):  
             loss = self.train(epoch)
-            self.writer.add_scalar('lr/train',self.optimizer.state_dict()['param_groups'][0]['lr'],epoch)
-            self.writer.add_scalar('loss/train',loss,epoch)
+            self.writer.add_scalar('train/lr',self.optimizer.state_dict()['param_groups'][0]['lr'],epoch)
+            self.writer.add_scalar('train/loss',loss,epoch)
             saved_dict = {
                 'model': self.model.__class__.__name__,
                 'epoch': epoch,
@@ -118,18 +118,18 @@ class Trainer(object):
         print("lr:",self.optimizer.state_dict()['param_groups'][0]['lr'])
         total_loss = 0
         num_of_miniepoch = 144
+        miniepoch_size = len(self.train_loader)
+        print("#batches:",miniepoch_size*num_of_miniepoch)
         for each_miniepoch in range(num_of_miniepoch):
-            miniepoch_size = len(self.train_loader)
-            print("#batches:",miniepoch_size*num_of_miniepoch)
             for i,[img,gt] in enumerate(self.train_loader):
                 print("epoch:",epoch," batch:",miniepoch_size*each_miniepoch+i+1)
-                print("img:",img.shape)
-                print("gt:",gt.shape)
+                #print("img:",img.shape)
+                #print("gt:",gt.shape)
                 self.optimizer.zero_grad()
                 if self.cuda:
                     img,gt = img.cuda(),gt.cuda()
                 pred = self.model(img)['out']
-                print("pred:",pred.shape)
+                #print("pred:",pred.shape)
                 loss = self.criterion(pred,gt.long())
                 print("loss:",loss)
                 total_loss += loss.data

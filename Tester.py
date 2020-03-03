@@ -118,7 +118,7 @@ class Tester(object):
     def test_one_large(self,img_file,gt_file,train_epoch,save):
         img = Image.open(img_file).convert('RGB')
         H, W = img.size
-        gt = np.array(mask2label(Image.open(gt_file)))
+        gt = np.array(Image.open(gt_file))
         self.model.eval()
         times, points = self.get_pointset(img)
         
