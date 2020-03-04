@@ -62,6 +62,7 @@ Note:
 - [x] Support FCN
 - [x] Support DeepLabV3
 - [x] Support Lovász-Softmax loss
-- [ ] Support DeepLabV3+
+- [ ] Support DeepLabV3+ (multiple backbones)
 - [ ] Support CARAFE upsampling module
 - [ ] Provide a simple GUI
+- [ ] Support training on multiple GPUs
