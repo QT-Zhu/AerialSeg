@@ -1,7 +1,7 @@
 from torch.utils.data.dataset import Dataset
 import os
 from PIL import Image
-from utils import mask2label
+#from .utils import mask2label
 from custom_transforms import AerialTransforms
 
 

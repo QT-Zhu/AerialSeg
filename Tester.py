@@ -1,16 +1,17 @@
 from custom_transforms import transforms
-import custom_models.segmentation as models
+import custom_models.segmentation as tvmodels
 import torch
 from PIL import Image
 import numpy as np
-from custom_transforms import functional as F
+from custom_transforms import functional as func
 from tqdm import tqdm
 import os
-from metrics import Evaluator
+from utils.metrics import Evaluator
 
+import models
 import math 
 
-from utils import ret2mask,mask2label
+from utils.utils import ret2mask,mask2label
 
 class Tester(object):
     def __init__(self, args):
@@ -38,9 +39,15 @@ class Tester(object):
 
     def init_by_args(self,args):
         if args.model == 'fcn':
-            self.model = models.fcn_resnet50(num_classes=args.num_of_class)
-        elif args.model == 'deeplab':
-            self.model = models.deeplabv3_resnet50(num_classes=args.num_of_class)
+            self.model = tvmodels.fcn_resnet50(num_classes=args.num_of_class)
+        elif args.model == 'deeplabv3':
+            self.model = tvmodels.deeplabv3_resnet50(num_classes=args.num_of_class)
+        elif args.model == 'deeplabv3+':
+            self.model = models.DeepLab(num_classes=args.num_of_class)
+        elif args.model == 'unet':
+            self.model = models.UNet(num_classes=args.num_of_class)
+        elif args.model == 'pspnet':
+            raise NotImplementedError
         else:
             raise NotImplementedError
 
@@ -50,7 +57,7 @@ class Tester(object):
             checkpoint = torch.load(args.checkpoint) 
         else:
             checkpoint = torch.load(args.checkpoint, map_location='cpu')
-        self.model.load_state_dict(checkpoint['model'])
+        self.model.load_state_dict(checkpoint['parameters'])
         self.epoch = checkpoint['epoch']
 
     def get_pairs(self):
@@ -73,13 +80,13 @@ class Tester(object):
         i = 0
         while i<W:
             break_flag_i = False
-            if i+self.crop_size > W:
+            if i+self.crop_size >= W:
                 i = W - self.crop_size
                 break_flag_i = True
             j = 0
             while j<H:
                 break_flag_j = False
-                if j + self.crop_size > H:
+                if j + self.crop_size >= H:
                     j = H - self.crop_size
                     break_flag_j = True
                 count+=1
@@ -90,7 +97,7 @@ class Tester(object):
             if break_flag_i:
                 break
             i+=self.stride
-        assert count==self.get_test_times(W,H)
+        assert count==self.get_test_times(W,H),f'count={count} while get_test_times returns {self.get_test_times(W,H)}'
         return count, pointset
     
     def get_test_times(self, width, height):
@@ -119,7 +126,6 @@ class Tester(object):
         img = Image.open(img_file).convert('RGB')
         H, W = img.size
         gt = np.array(Image.open(gt_file))
-        self.model.eval()
         times, points = self.get_pointset(img)
         
         print(f'{times} tests will be carried out on {img_file}...')
@@ -133,14 +139,13 @@ class Tester(object):
         self.evaluator.add_batch(label_map,gt)
         
         #save mask
-        if train_epoch>=0 and save:
-            
+        if save:   
             mask = ret2mask(label_map)
             png_name = os.path.join("epoch"+str(train_epoch),os.path.basename(img_file).split('.')[0]+'.png')
             Image.fromarray(mask).save(png_name)
 
     def test_patch(self,i,j,img,label_map,score_map):
-        cropped = F.crop(img,i,j,self.crop_size,self.crop_size)
+        cropped = func.crop(img,i,j,self.crop_size,self.crop_size)
         cropped = self.tensor_trans(cropped)
         cropped = self.normalize_trans(cropped).unsqueeze(0)
         

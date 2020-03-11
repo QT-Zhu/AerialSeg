@@ -1,13 +1,13 @@
 from torch.utils.data.dataloader import DataLoader
-from AerialDataset import AerialDataset
+from utils.AerialDataset import AerialDataset
 import torch
 import os
-import custom_models.segmentation as models
+import custom_models.segmentation as tvmodels
 import torch.nn as nn
 import torch.optim as opt
-from utils import ret2mask
+from utils.utils import ret2mask
 import matplotlib.pyplot as plt
-from metrics import Evaluator
+from utils.metrics import Evaluator
 import numpy as np
 from PIL import Image
 
@@ -18,9 +18,9 @@ import argparse
 from tensorboardX import SummaryWriter
 
 #For Lovasz loss
-from utils import LovaszSoftmax
+from utils.loss import LovaszSoftmax
 
-
+import models
 
 class Trainer(object):
     def __init__(self, args):
@@ -30,11 +30,18 @@ class Trainer(object):
         
         self.train_data = AerialDataset(args,mode='train')
         self.train_loader =  DataLoader(self.train_data,batch_size=args.train_batch_size,shuffle=True,
-                          num_workers=1)
+                          num_workers=2)
         if args.model == 'fcn':
-            self.model = models.fcn_resnet50(num_classes=args.num_of_class)
-        elif args.model == 'deeplab':
-            self.model = models.deeplabv3_resnet50(num_classes=args.num_of_class)
+            #self.model = models.FCN8(num_classes=args.num_of_class)
+            self.model = tvmodels.fcn_resnet50(num_classes=args.num_of_class)
+        elif args.model == 'deeplabv3':
+            self.model = tvmodels.deeplabv3_resnet50(num_classes=args.num_of_class)
+        elif args.model == 'deeplabv3+':
+            self.model = models.DeepLab(num_classes=args.num_of_class)
+        elif args.model == 'unet':
+            self.model = models.UNet(num_classes=args.num_of_class)
+        elif args.model == 'pspnet':
+            raise NotImplementedError
         else:
             raise NotImplementedError
 
@@ -76,21 +83,23 @@ class Trainer(object):
             #start from next epoch
         else:
             self.start_epoch = 1
-        self.writer = SummaryWriter()
+        self.writer = SummaryWriter(comment='-'+args.model+'_'+args.loss)
         self.init_eval = args.init_eval
         
     #Note: self.start_epoch and self.epochs are only used in run() to schedule training & validation
     def run(self):
         if self.init_eval: #init with an evaluation
-            Acc,_,mIoU,_ = self.eval_complete(0,True)
-            self.writer.add_scalar('eval/Acc', Acc, 0)
-            self.writer.add_scalar('eval/mIoU', mIoU, 0)
-
+            init_test_epoch = self.start_epoch - 1
+            Acc,_,mIoU,_ = self.eval_complete(init_test_epoch,True)
+            self.writer.add_scalar('eval/Acc', Acc, init_test_epoch)
+            self.writer.add_scalar('eval/mIoU', mIoU, init_test_epoch)
+            self.writer.flush()
         end_epoch = self.start_epoch + self.epochs
         for epoch in range(self.start_epoch,end_epoch):  
             loss = self.train(epoch)
             self.writer.add_scalar('train/lr',self.optimizer.state_dict()['param_groups'][0]['lr'],epoch)
             self.writer.add_scalar('train/loss',loss,epoch)
+            self.writer.flush()
             saved_dict = {
                 'model': self.model.__class__.__name__,
                 'epoch': epoch,
@@ -103,6 +112,7 @@ class Trainer(object):
             Acc,_,mIoU,_ = self.eval_complete(epoch)
             self.writer.add_scalar('eval/Acc',Acc,epoch)
             self.writer.add_scalar('eval/mIoU',mIoU,epoch)
+            self.writer.flush()
             if self.schedule_mode == 'step':
                 self.scheduler.step()
             elif self.schedule_mode == 'miou':
@@ -111,6 +121,7 @@ class Trainer(object):
                 self.scheduler.step(Acc)
             else:
                 raise NotImplementedError
+        self.writer.close()
 
     def train(self,epoch):
         self.model.train()
@@ -138,6 +149,7 @@ class Trainer(object):
         return total_loss
 
     #deprecated in latest version
+    '''
     def eval(self,epoch,save_flag):
         self.model.eval()
         self.evaluator.reset()
@@ -191,12 +203,13 @@ class Trainer(object):
         print("FWIoU:",FWIoU)
 
         return Acc,Acc_class,mIoU,FWIoU
+    '''
     
     def eval_complete(self,epoch,save_flag=True):
         args = argparse.Namespace()
         args.by_trainer = True
-        args.crop_size = 512
-        args.stride = 256
+        args.crop_size = self.args.crop_size
+        args.stride = self.args.crop_size//2
         args.cuda = self.args.cuda
         args.model = self.model
         args.eval_list = self.args.eval_list
