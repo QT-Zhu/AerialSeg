@@ -60,10 +60,10 @@ Note:
 ## Todo
 
 - [x] Support FCN
-- [x] Support DeepLabV3
+- [x] Support DeepLabV3+
 - [x] Support Lovász-Softmax loss
 - [x] Support DeepLabV3+
-- [ ] Support more models
-- [ ] Support CARAFE upsampling module
+- [x] Support more models (U-Net, PSPNet)
+- [x] Support CARAFE upsampling module
 - [ ] Provide a simple GUI
 - [ ] Support training on multiple GPUs

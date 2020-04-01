@@ -92,9 +92,9 @@ class PSPNet(BaseModel):
             aux = F.interpolate(aux, size=input_size, mode='bilinear')
             aux = aux[:, :, :input_size[0], :input_size[1]]
             return output, aux
-        out = dict()
-        out['out'] = output
-        return out
+        #out = dict()
+        #out['out'] = output
+        return output
 
     def get_backbone_params(self):
         return chain(self.initial.parameters(), self.layer1.parameters(), self.layer2.parameters(), 

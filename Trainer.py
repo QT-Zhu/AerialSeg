@@ -2,10 +2,10 @@ from torch.utils.data.dataloader import DataLoader
 from utils.AerialDataset import AerialDataset
 import torch
 import os
-import custom_models.segmentation as tvmodels
+#import custom_models.segmentation as tvmodels
 import torch.nn as nn
 import torch.optim as opt
-from utils.utils import ret2mask
+from utils.utils import ret2mask,get_test_times
 import matplotlib.pyplot as plt
 from utils.metrics import Evaluator
 import numpy as np
@@ -17,9 +17,9 @@ import argparse
 #from torch.utils.tensorboard import SummaryWriter
 from tensorboardX import SummaryWriter
 
-#For Lovasz loss
-from utils.loss import LovaszSoftmax
-
+#For loss and scheduler
+from utils.loss import CE_DiceLoss, CrossEntropyLoss2d, LovaszSoftmax, FocalLoss
+from utils.scheduler import Poly, OneCycle
 import models
 
 class Trainer(object):
@@ -32,33 +32,43 @@ class Trainer(object):
         self.train_loader =  DataLoader(self.train_data,batch_size=args.train_batch_size,shuffle=True,
                           num_workers=2)
         if args.model == 'fcn':
-            #self.model = models.FCN8(num_classes=args.num_of_class)
-            self.model = tvmodels.fcn_resnet50(num_classes=args.num_of_class)
-        elif args.model == 'deeplabv3':
-            self.model = tvmodels.deeplabv3_resnet50(num_classes=args.num_of_class)
+            self.model = models.FCN8(num_classes=args.num_of_class)
+            #self.model = tvmodels.fcn_resnet50(num_classes=args.num_of_class)
         elif args.model == 'deeplabv3+':
-            self.model = models.DeepLab(num_classes=args.num_of_class)
-        elif args.model == 'unet':
-            self.model = models.UNet(num_classes=args.num_of_class)
+            self.model = models.DeepLab(num_classes=args.num_of_class,backbone='resnet')
+        elif args.model == 'carafe':
+            self.model = models.DeepLab_CARAFE(num_classes=args.num_of_class,backbone='resnet')
+        elif args.model == 'gcn':
+            self.model = models.GCN(num_classes=args.num_of_class)
         elif args.model == 'pspnet':
-            raise NotImplementedError
+            self.model = models.PSPNet(num_classes=args.num_of_class)
         else:
             raise NotImplementedError
 
-        self.loss = args.loss
-        if self.loss == 'CE':
-            self.criterion = nn.CrossEntropyLoss()
-        elif self.loss == 'LS':
+        if args.loss == 'CE':
+            self.criterion = CrossEntropyLoss2d()
+        elif args.loss == 'LS':
             self.criterion = LovaszSoftmax()
+        elif args.loss == 'F':
+            self.criterion = FocalLoss()
+        elif args.loss == 'CE+D':
+            self.criterion = CE_DiceLoss()
         else:
             raise NotImplementedError
+        
+        self.num_miniepoch = get_test_times(6000,6000,args.crop_size,args.crop_size) #Only for Potsdam
+        print(f'recommended to set {self.num_miniepoch} as times for iters...')
+        #e.g. if crop_size=512, mini_epoch_size should be 144
+        iters_per_epoch =  self.num_miniepoch * len(self.train_loader) #dataloader has already considered batch-size
 
         self.schedule_mode = args.schedule_mode
-        self.optimizer = opt.AdamW(self.model.parameters(),lr=0.05)
+        self.optimizer = opt.AdamW(self.model.parameters(),lr=args.lr)
         if self.schedule_mode == 'step':
             self.scheduler = opt.lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.1)
         elif self.schedule_mode == 'miou' or self.schedule_mode == 'acc':
             self.scheduler = opt.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='max', patience=10, factor=0.1)
+        elif self.schedule_mode == 'poly':
+            self.scheduler = Poly(self.optimizer,num_epochs=args.epochs,iters_per_epoch=iters_per_epoch)
         else:
             raise NotImplementedError
 
@@ -71,6 +81,9 @@ class Trainer(object):
             self.model = self.model.cuda()
 
         self.resume = args.resume
+        self.finetune = args.finetune
+        assert not (self.resume != None and self.finetune != None)
+
         if self.resume != None:
             if self.cuda:
                 checkpoint = torch.load(args.resume)
@@ -81,9 +94,18 @@ class Trainer(object):
             self.scheduler.load_state_dict(checkpoint['scheduler'])
             self.start_epoch = checkpoint['epoch'] + 1
             #start from next epoch
+        elif self.finetune != None:
+            if self.cuda:
+                checkpoint = torch.load(args.finetune)
+            else:
+                checkpoint = torch.load(args.finetune, map_location='cpu')
+            self.model.load_state_dict(checkpoint['parameters'],strict=False)
+            self.start_epoch = checkpoint['epoch'] + 1
         else:
             self.start_epoch = 1
-        self.writer = SummaryWriter(comment='-'+args.model+'_'+args.loss)
+            
+
+        self.writer = SummaryWriter(comment='-'+self.model.__class__.__name__+'_'+args.loss)
         self.init_eval = args.init_eval
         
     #Note: self.start_epoch and self.epochs are only used in run() to schedule training & validation
@@ -113,7 +135,7 @@ class Trainer(object):
             self.writer.add_scalar('eval/Acc',Acc,epoch)
             self.writer.add_scalar('eval/mIoU',mIoU,epoch)
             self.writer.flush()
-            if self.schedule_mode == 'step':
+            if self.schedule_mode == 'step' or self.schedule_mode == 'poly':
                 self.scheduler.step()
             elif self.schedule_mode == 'miou':
                 self.scheduler.step(mIoU)
@@ -128,10 +150,9 @@ class Trainer(object):
         print(f"----------epoch {epoch}----------")
         print("lr:",self.optimizer.state_dict()['param_groups'][0]['lr'])
         total_loss = 0
-        num_of_miniepoch = 144
         miniepoch_size = len(self.train_loader)
-        print("#batches:",miniepoch_size*num_of_miniepoch)
-        for each_miniepoch in range(num_of_miniepoch):
+        print("#batches:",miniepoch_size*self.num_miniepoch)
+        for each_miniepoch in range(self.num_miniepoch):
             for i,[img,gt] in enumerate(self.train_loader):
                 print("epoch:",epoch," batch:",miniepoch_size*each_miniepoch+i+1)
                 #print("img:",img.shape)
@@ -139,7 +160,8 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 if self.cuda:
                     img,gt = img.cuda(),gt.cuda()
-                pred = self.model(img)['out']
+                #pred = self.model(img)['out']
+                pred = self.model(img)
                 #print("pred:",pred.shape)
                 loss = self.criterion(pred,gt.long())
                 print("loss:",loss)

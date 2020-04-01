@@ -2,6 +2,13 @@ from PIL import Image
 import numpy as np
 import os
 from tqdm import tqdm
+import math
+
+
+def get_test_times(width, height, crop_size, stride):
+    x = math.ceil((width - crop_size)/stride) + 1
+    y = math.ceil((height - crop_size)/stride) + 1
+    return x*y
 
 # surfaces(RGB: 255, 255, 255)
 # Building(RGB: 0, 0, 255)

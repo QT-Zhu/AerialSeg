@@ -50,9 +50,9 @@ class decoder(nn.Module):
         # Concatenate
         x = torch.cat([x_copy, x], dim=1)
         x = self.up_conv(x)
-        output = dict()
-        output['out'] = x
-        return output
+        #output = dict()
+        #output['out'] = x
+        return x
 
 class UNet(BaseModel):
     def __init__(self, num_classes, in_channels=3, freeze_bn=False, **_):

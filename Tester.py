@@ -1,5 +1,5 @@
 from custom_transforms import transforms
-import custom_models.segmentation as tvmodels
+#import custom_models.segmentation as tvmodels
 import torch
 from PIL import Image
 import numpy as np
@@ -11,7 +11,7 @@ from utils.metrics import Evaluator
 import models
 import math 
 
-from utils.utils import ret2mask,mask2label
+from utils.utils import ret2mask,mask2label,get_test_times
 
 class Tester(object):
     def __init__(self, args):
@@ -39,15 +39,17 @@ class Tester(object):
 
     def init_by_args(self,args):
         if args.model == 'fcn':
-            self.model = tvmodels.fcn_resnet50(num_classes=args.num_of_class)
-        elif args.model == 'deeplabv3':
-            self.model = tvmodels.deeplabv3_resnet50(num_classes=args.num_of_class)
+            self.model = models.FCN8(num_classes=args.num_of_class)
         elif args.model == 'deeplabv3+':
-            self.model = models.DeepLab(num_classes=args.num_of_class)
+            self.model = models.DeepLab(num_classes=args.num_of_class,backbone='resnet')
+        elif args.model == 'carafe':
+            self.model = models.DeepLab_CARAFE(num_classes=args.num_of_class,backbone='resnet')
         elif args.model == 'unet':
             self.model = models.UNet(num_classes=args.num_of_class)
+        elif args.model == 'gcn':
+            self.model = models.GCN(num_classes=args.num_of_class)
         elif args.model == 'pspnet':
-            raise NotImplementedError
+            self.model = models.PSPNet(num_classes=args.num_of_class)
         else:
             raise NotImplementedError
 
@@ -97,16 +99,11 @@ class Tester(object):
             if break_flag_i:
                 break
             i+=self.stride
-        assert count==self.get_test_times(W,H),f'count={count} while get_test_times returns {self.get_test_times(W,H)}'
-        return count, pointset
-    
-    def get_test_times(self, width, height):
-        x = math.ceil((width - self.crop_size)/self.stride) + 1
-        y = math.ceil((height - self.crop_size)/self.stride) + 1
-        return x*y
+        value = get_test_times(W,H,self.crop_size,self.stride)
+        assert count==value,f'count={count} while get_test_times returns {value}'
+        return count, pointset 
 
     def run(self,train_epoch=-1,save=False):
-        self.model.eval()
         for img_file,gt_file in self.test_list:
             print(f"Start testing {img_file}...")
             if save and os.path.exists("epoch"+str(train_epoch)) is False:
@@ -148,11 +145,12 @@ class Tester(object):
         cropped = func.crop(img,i,j,self.crop_size,self.crop_size)
         cropped = self.tensor_trans(cropped)
         cropped = self.normalize_trans(cropped).unsqueeze(0)
-        
+        self.model.eval()
         if self.cuda:
             cropped = cropped.cuda()
-        out = self.model(cropped)['out']
-        
+        #out = self.model(cropped)['out']
+        out = self.model(cropped)
+        #out = torch.nn.functional.softmax(out, dim=1)
         ret = torch.max(out.squeeze(),dim=0)
         score = ret[0].data.detach().cpu().numpy()
         label = ret[1].data.detach().cpu().numpy()

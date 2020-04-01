@@ -7,6 +7,7 @@ from torchvision import models
 import torch.utils.model_zoo as model_zoo
 from . import initialize_weights
 from itertools import chain
+from .carafe import CARAFE
 
 ''' 
 -> ResNet BackBone
@@ -281,6 +282,8 @@ class ASSP(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(0.5)
 
+        self.carafe = CARAFE(c=256,scale=32)
+
         initialize_weights(self)
 
     def forward(self, x):
@@ -288,8 +291,9 @@ class ASSP(nn.Module):
         x2 = self.aspp2(x)
         x3 = self.aspp3(x)
         x4 = self.aspp4(x)
-        x5 = F.interpolate(self.avg_pool(x), size=(x.size(2), x.size(3)), mode='bilinear', align_corners=True)
-
+        x4_ = self.avg_pool(x)
+        #x5 = F.interpolate(x4_, size=(x.size(2), x.size(3)), mode='bilinear', align_corners=True)
+        x5 = self.carafe(x4_)
         x = self.conv1(torch.cat((x1, x2, x3, x4, x5), dim=1))
         x = self.bn1(x)
         x = self.dropout(self.relu(x))
@@ -306,6 +310,7 @@ class Decoder(nn.Module):
         self.conv1 = nn.Conv2d(low_level_channels, 48, 1, bias=False)
         self.bn1 = nn.BatchNorm2d(48)
         self.relu = nn.ReLU(inplace=True)
+        self.carafe = CARAFE(c=256,scale=4)
 
         # Table 2, best performance with two 3x3 convs
         self.output = nn.Sequential(
@@ -324,8 +329,9 @@ class Decoder(nn.Module):
         low_level_features = self.conv1(low_level_features)
         low_level_features = self.relu(self.bn1(low_level_features))
         H, W = low_level_features.size(2), low_level_features.size(3)
-
-        x = F.interpolate(x, size=(H, W), mode='bilinear', align_corners=True)
+        
+        #x = F.interpolate(x, size=(H, W), mode='bilinear', align_corners=True)
+        x = self.carafe(x)
         x = self.output(torch.cat((low_level_features, x), dim=1))
         return x
 
@@ -333,11 +339,11 @@ class Decoder(nn.Module):
 -> Deeplab V3 +
 '''
 
-class DeepLab(BaseModel):
+class DeepLab_CARAFE(BaseModel):
     def __init__(self, num_classes, in_channels=3, backbone='xception', pretrained=True, 
                 output_stride=16, freeze_bn=False, **_):
                 
-        super(DeepLab, self).__init__()
+        super(DeepLab_CARAFE, self).__init__()
         assert ('xception' or 'resnet' in backbone)
         if 'resnet' in backbone:
             self.backbone = ResNet(in_channels=in_channels, output_stride=output_stride, pretrained=pretrained)
@@ -348,6 +354,7 @@ class DeepLab(BaseModel):
 
         self.ASSP = ASSP(in_channels=2048, output_stride=output_stride)
         self.decoder = Decoder(low_level_channels, num_classes)
+        self.carafe = CARAFE(c=6,scale=4)
 
         if freeze_bn: self.freeze_bn()
 
@@ -356,7 +363,9 @@ class DeepLab(BaseModel):
         x, low_level_features = self.backbone(x)
         x = self.ASSP(x)
         x = self.decoder(x, low_level_features)
-        x = F.interpolate(x, size=(H, W), mode='bilinear', align_corners=True)
+        x = self.carafe(x)
+        #x = F.interpolate(x, size=(H, W), mode='bilinear', align_corners=True)
+
         return x
 
     # Two functions to yield the parameters of the backbone

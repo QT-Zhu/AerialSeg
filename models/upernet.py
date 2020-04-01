@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
-from base import BaseModel
-from utils.helpers import initialize_weights
+from . import BaseModel
+from . import initialize_weights
 from itertools import chain
 
 class PSPModule(nn.Module):
-    # In the original inmplementation they use precise RoI pooling 
+    # In the original implementation they use precise RoI pooling 
     # Instead of using adaptative average pooling
     def __init__(self, in_channels, bin_sizes=[1, 2, 4, 6]):
         super(PSPModule, self).__init__()
