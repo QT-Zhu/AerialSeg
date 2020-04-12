@@ -55,7 +55,7 @@ Note:
 1. Strongly recommend to use Anaconda to configure the environment by `conda create -n AerialSeg python=3.7.5`.
 2. For macOS, `conda install pytorch torchvision -c pytorch`, and for Ubuntu with CUDA, `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch` to install PyTorch and torchvision.
 3. Install sklearn by `conda install scikit-learn` and install TensorBoardX by `conda install -c conda-forge tensorboardx`.
-4. Hopefully, no other major site packages are required.
+4. If you need GUI, install PyQt5 or hopefully, no other major site packages are required.
 
 ## Todo
 
@@ -65,5 +65,5 @@ Note:
 - [x] Support DeepLabV3+
 - [x] Support more models (U-Net, PSPNet)
 - [x] Support CARAFE upsampling module
-- [ ] Provide a simple GUI
+- [x] Provide a simple GUI
 - [ ] Support training on multiple GPUs

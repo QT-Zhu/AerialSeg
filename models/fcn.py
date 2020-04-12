@@ -98,9 +98,7 @@ class FCN8(BaseModel):
 
         # Remove the corresponding padded regions to the input img size
         final_value = final_value[:, :, 31: (31 + imh_H), 31: (31 + img_W)].contiguous()
-        output_dict = dict()
-        output_dict['out'] = final_value
-        return output_dict
+        return final_value
 
     def get_backbone_params(self):
         return chain(self.pool3.parameters(), self.pool4.parameters(), self.pool5.parameters(), self.output.parameters())

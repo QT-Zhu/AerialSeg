@@ -2,7 +2,6 @@ from torch.utils.data.dataloader import DataLoader
 from utils.AerialDataset import AerialDataset
 import torch
 import os
-#import custom_models.segmentation as tvmodels
 import torch.nn as nn
 import torch.optim as opt
 from utils.utils import ret2mask,get_test_times
@@ -33,7 +32,6 @@ class Trainer(object):
                           num_workers=2)
         if args.model == 'fcn':
             self.model = models.FCN8(num_classes=args.num_of_class)
-            #self.model = tvmodels.fcn_resnet50(num_classes=args.num_of_class)
         elif args.model == 'deeplabv3+':
             self.model = models.DeepLab(num_classes=args.num_of_class,backbone='resnet')
         elif args.model == 'carafe':
@@ -99,7 +97,7 @@ class Trainer(object):
                 checkpoint = torch.load(args.finetune)
             else:
                 checkpoint = torch.load(args.finetune, map_location='cpu')
-            self.model.load_state_dict(checkpoint['parameters'],strict=False)
+            self.model.load_state_dict(checkpoint['parameters'])
             self.start_epoch = checkpoint['epoch'] + 1
         else:
             self.start_epoch = 1

@@ -1,5 +1,4 @@
 from custom_transforms import transforms
-#import custom_models.segmentation as tvmodels
 import torch
 from PIL import Image
 import numpy as np
