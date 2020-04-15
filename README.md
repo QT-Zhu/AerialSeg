@@ -8,7 +8,7 @@ AerialSeg is a collection of algorithm pipelines for segmentation of aerial imag
 
 ## Features
 
-### Random Sampling
+### Modified Random Sampling
 
 AerialSeg allows direct use of original VHR dataset without massive preprocess (for example, dividing large patches into smaller ones).
 
@@ -16,7 +16,7 @@ The original random cropping transform provided by torchvision is to randomly ch
 
 This sampling mechanism is slightly modified so that pixels nearby the image margin get compensated. New results are shown below.![](https://github.com/QT-Zhu/AerialSeg/blob/master/images/random_2.png)
 
-### Unique Augmentation
+### Data Augmentation
 
 Aerial dataset is commonly preprocessed to be TOP images, making it rotation invariant so it is reasonable to do data augmentation which might be unsuitable for datasets such as Cityscapes or Pascal VOC.
 
@@ -54,7 +54,7 @@ Note:
 
 1. Strongly recommend to use Anaconda to configure the environment by `conda create -n AerialSeg python=3.7.5`.
 2. For macOS, `conda install pytorch torchvision -c pytorch`, and for Ubuntu with CUDA, `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch` to install PyTorch and torchvision.
-3. Install sklearn by `conda install scikit-learn` and install TensorBoardX by `conda install -c conda-forge tensorboardx`.
+3. Install sklearn and tqdm by `conda install scikit-learn tqdm` and install TensorBoardX by `conda install -c conda-forge tensorboardx`.
 4. If you need GUI, install PyQt5 or hopefully, no other major site packages are required.
 
 ## Todo
