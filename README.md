@@ -24,7 +24,7 @@ Aerial dataset is commonly preprocessed to be TOP images, making it rotation inv
 
 Similar to the problem of using VHR images to train, it remains a problem to use large VHR images to test. AerialSeg uses the form of convolution kernel to run tests, which means crop size and stride are variables that can be determined by the user.
 
-By empirical results, assume the training crop size is N, making stride 0.5N and test crop size N is recommended.
+By empirical results, assume the training crop size is N, making stride 0.5N and test crop size N is recommended (can be adjusted).
 
 ## Environment
 
