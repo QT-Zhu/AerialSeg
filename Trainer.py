@@ -54,7 +54,7 @@ class Trainer(object):
         else:
             raise NotImplementedError
         
-        self.num_miniepoch = get_test_times(6000,6000,args.crop_size,args.crop_size) #Only for Potsdam
+        self.num_miniepoch = get_test_times(6000,6000,args.crop_size,args.crop_size) #only for Potsdam
         print(f'recommended to set {self.num_miniepoch} as times for iters...')
         #e.g. if crop_size=512, mini_epoch_size should be 144
         iters_per_epoch =  self.num_miniepoch * len(self.train_loader) #dataloader has already considered batch-size
@@ -102,7 +102,6 @@ class Trainer(object):
         else:
             self.start_epoch = 1
             
-
         self.writer = SummaryWriter(comment='-'+self.model.__class__.__name__+'_'+args.loss)
         self.init_eval = args.init_eval
         
@@ -158,7 +157,6 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 if self.cuda:
                     img,gt = img.cuda(),gt.cuda()
-                #pred = self.model(img)['out']
                 pred = self.model(img)
                 #print("pred:",pred.shape)
                 loss = self.criterion(pred,gt.long())
