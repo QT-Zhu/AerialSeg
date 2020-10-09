@@ -205,6 +205,7 @@ class Trainer(object):
             W,H = img.size #TODO: check numpy & PIL dimensions
             label_map = np.zeros([H,W],dtype=np.uint8)
             score_map = np.zeros([H,W],dtype=np.uint8)
+            #score_map not necessarily to be uint8 but uint8 gets better result...
             tbar = tqdm(points)
             for i,j in tbar:
                 tbar.set_description(f"{i},{j}")
