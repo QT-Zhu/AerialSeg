@@ -1,10 +1,12 @@
 # AerialSeg
-AerialSeg is a collection of algorithm pipelines for segmentation of aerial imagery implemented by PyTorch, which consists of following elements with characteristics.
+AerialSeg is a collection of algorithm pipelines for segmentation of aerial imagery implemented by PyTorch, which is with following characteristics.
 
-- Dataset & Dataloader: Original ISPRS Potsdam dataset is supported and there is no need to divide large images into smaller ones before training anymore. AerialSeg adapts modified random sampling mechanism to fully make use of context information without waste by division. Another UAV aerial dataset named [UDD](https://github.com/MarcWong/UDD) is also supported now!
+- Dataset & Dataloader: Original ISPRS Potsdam dataset is supported and there is no need to divide large images into smaller ones before training anymore. AerialSeg adopts random sampling mechanism to fully make use of context information without any waste by division. Another UAV aerial dataset named [UDD](https://github.com/MarcWong/UDD) is also supported now!
 - Data augmentation: AerialSeg offers a set of data augmentation transforms considering the unique characteristics of aerial imgery, such as rotation invariance.
 - Loss function: The distribution of classes in aerial images is usually imbalanced so loss function should be sensitive to classes with a small proportion.
 - Evaluation & Monitoring: AerialSeg provides 4 metrics of evaluation, namely Acc, Acc per class, mIoU and FWIoU. TensorBoardX is applied to keep track with training process.
+
+The motivation of the repository is that common CV research mainly focuses on scenes with rich "things" information (or "objects"), such as CityScapes dataset. A number of tricks have been tested  under these scenes while for remote sensing imagery or UAV imagery whose main contents are "stuff" information (or "texture"), these tricks are not necessarily effective. Besides, aerial imagery datasets have unique characteristics which requires specifications at I/O and preprocess stage. This repo helps to study tricks especially for aerial imagery datasets.
 
 ## Features
 
@@ -59,7 +61,8 @@ Note:
 
 ## Todo
 
-- [x] Support FCN
 - [x] Support DeepLabV3+
-- [x] Support Lovász-Softmax loss
+- [x] Support CARAFE (ICCV2019)
+- [x] Support Lovász-Softmax loss (CVPR2018)
 - [x] Support training on multiple GPUs
+- [ ] Support Decoupled DeepLab (ECCV2020)
