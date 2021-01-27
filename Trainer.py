@@ -224,6 +224,7 @@ class Trainer(object):
         print("Acc_class:",Acc_class)
         print("mIoU:",mIoU)
         print("FWIoU:",FWIoU)
+        self.evaluator.reset()
         return Acc,Acc_class,mIoU,FWIoU
 
     def test_patch(self,i,j,img,label_map,score_map):
