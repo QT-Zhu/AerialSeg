@@ -56,8 +56,10 @@ Note:
 
 1. Strongly recommend to use Anaconda to configure the environment by `conda create -n AerialSeg python=3.7.5`.
 2. For macOS, `conda install pytorch torchvision -c pytorch`, and for Ubuntu with CUDA, `conda install pytorch torchvision cudatoolkit=10.0 -c pytorch` to install PyTorch and torchvision.
-3. Install sklearn and tqdm by `conda install scikit-learn tqdm` and install TensorBoardX by `conda install -c conda-forge tensorboardx`.
-5. To train or test, please read `train.py` as a task launcher to understand different hyperparameters and their defaulted value.
+3. Install sklearn and tqdm by `conda install scikit-learn tqdm` and install TensorBoardX by `conda install -c conda-forge tensorboardx` and `conda install tensorboard`.
+4. To train or test, please read `train.py` as a task launcher to understand different hyperparameters and their defaulted value.
+
+Note that this configuration procedure could be out-of-date since conda could include more site packages.
 
 ## Todo
 
